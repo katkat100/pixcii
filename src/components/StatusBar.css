@@ -1,0 +1,31 @@
+.status-bar {
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  padding: 0 12px;
+  height: 24px;
+  font-size: 11px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+  font-family: monospace;
+}
+
+.status-item {
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.status-separator {
+  color: var(--border);
+  user-select: none;
+}
+
+.status-char code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-family: monospace;
+  font-size: 11px;
+}

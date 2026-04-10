@@ -1,0 +1,104 @@
+.menu-bar {
+  background: var(--panel);
+  padding: 0 16px;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  flex-shrink: 0;
+  height: 30px;
+  position: relative;
+  z-index: 100;
+}
+
+.app-title {
+  font-weight: bold;
+  color: var(--accent);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  padding-right: 12px;
+  margin-right: 4px;
+}
+
+.menu-group {
+  position: relative;
+}
+
+.menu-trigger {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 0 10px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  transition: background 0.1s, color 0.1s;
+}
+
+.menu-trigger:hover,
+.menu-trigger.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  min-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 200;
+  border-radius: 0 0 4px 4px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 7px 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.shortcut {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-left: 20px;
+}
+
+.dropdown-separator {
+  height: 1px;
+  background: var(--border);
+  margin: 3px 0;
+}
+
+.menu-bar-spacer {
+  flex: 1;
+}
+
+.menu-dimensions {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: monospace;
+  padding-left: 8px;
+}
