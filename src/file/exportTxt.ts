@@ -11,9 +11,8 @@ function sanitizeName(name: string): string {
 export function allFramesToTexts(frames: Frame[]): { name: string; content: string }[] {
   return frames.map((frame, index) => {
     const sanitized = sanitizeName(frame.name)
-    const num = String(index + 1).padStart(2, '0')
     return {
-      name: `${sanitized}-${num}.txt`,
+      name: `${sanitized}.txt`,
       content: frameToText(frame),
     }
   })

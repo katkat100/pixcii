@@ -2,6 +2,8 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import './FrameManager.css'
 import { useProjectState, useProjectDispatch } from '../state/ProjectContext'
 import { Frame } from '../types'
+import { frameToText } from '../file/exportTxt'
+import { exportTextFile } from '../file/fileSystem'
 
 const THUMB_W = 64
 const THUMB_H = 44
@@ -59,6 +61,40 @@ export default function FrameManager() {
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
+  const [selectedFrames, setSelectedFrames] = useState<Set<number>>(new Set())
+
+  const handleFrameClick = (e: React.MouseEvent, index: number) => {
+    if (e.shiftKey) {
+      // Shift+click: select range from active frame to clicked frame
+      const min = Math.min(activeFrameIndex, index)
+      const max = Math.max(activeFrameIndex, index)
+      const newSet = new Set<number>()
+      for (let i = min; i <= max; i++) newSet.add(i)
+      setSelectedFrames(newSet)
+    } else {
+      // Normal click: select single frame, clear multi-selection
+      setSelectedFrames(new Set())
+      dispatch({ type: 'SELECT_FRAME', index })
+    }
+  }
+
+  const handleExportSelected = async () => {
+    closeContextMenu()
+    const indices = selectedFrames.size > 0
+      ? Array.from(selectedFrames).sort((a, b) => a - b)
+      : [activeFrameIndex]
+    try {
+      for (const i of indices) {
+        const f = frames[i]
+        if (!f) continue
+        const sanitized = f.name.replace(/[^a-zA-Z0-9_-]/g, '_')
+        const filename = `${sanitized}.txt`
+        await exportTextFile(filename, frameToText(f))
+      }
+    } catch (err) {
+      window.alert(`Export failed: ${(err as Error).message}`)
+    }
+  }
 
   const handleContextMenu = (e: React.MouseEvent, index: number) => {
     e.preventDefault()
@@ -122,6 +158,59 @@ export default function FrameManager() {
     closeContextMenu()
   }
 
+  const handleMoveLeft = (index: number) => {
+    if (index > 0) dispatch({ type: 'MOVE_FRAME', from: index, to: index - 1 })
+    closeContextMenu()
+  }
+
+  const handleMoveRight = (index: number) => {
+    if (index < frames.length - 1) dispatch({ type: 'MOVE_FRAME', from: index, to: index + 1 })
+    closeContextMenu()
+  }
+
+  // Drag-and-drop reordering
+  const dragIndexRef = useRef<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [dragSide, setDragSide] = useState<'left' | 'right'>('left')
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    dragIndexRef.current = index
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dragIndexRef.current === null || dragIndexRef.current === index) {
+      setDragOverIndex(null)
+      return
+    }
+    // Determine if cursor is on left or right half of the target
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const side = (e.clientX - rect.left) < rect.width / 2 ? 'left' : 'right'
+    setDragOverIndex(index)
+    setDragSide(side)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null)
+  }
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault()
+    const fromIndex = dragIndexRef.current
+    if (fromIndex !== null && fromIndex !== dropIndex) {
+      dispatch({ type: 'MOVE_FRAME', from: fromIndex, to: dropIndex })
+    }
+    dragIndexRef.current = null
+    setDragOverIndex(null)
+  }
+
+  const handleDragEnd = () => {
+    dragIndexRef.current = null
+    setDragOverIndex(null)
+  }
+
   return (
     <div className="frame-manager">
       {/* Header */}
@@ -167,9 +256,21 @@ export default function FrameManager() {
         {frames.map((frame, index) => (
           <div
             key={index}
-            className={`fm-frame-item${activeFrameIndex === index ? ' active' : ''}`}
-            onClick={() => dispatch({ type: 'SELECT_FRAME', index })}
+            className={[
+              'fm-frame-item',
+              activeFrameIndex === index ? 'active' : '',
+              selectedFrames.has(index) ? 'selected' : '',
+              dragOverIndex === index && dragSide === 'left' ? 'drop-left' : '',
+              dragOverIndex === index && dragSide === 'right' ? 'drop-right' : '',
+            ].filter(Boolean).join(' ')}
+            draggable
+            onClick={e => handleFrameClick(e, index)}
             onContextMenu={e => handleContextMenu(e, index)}
+            onDragStart={e => handleDragStart(e, index)}
+            onDragOver={e => handleDragOver(e, index)}
+            onDragLeave={handleDragLeave}
+            onDrop={e => handleDrop(e, index)}
+            onDragEnd={handleDragEnd}
           >
             <FrameThumb
               frame={frame}
@@ -201,6 +302,15 @@ export default function FrameManager() {
           </div>
           <div className="fm-context-item" onClick={() => handleRename(contextMenu.frameIndex)}>
             Rename
+          </div>
+          <div className="fm-context-item" onClick={() => handleMoveLeft(contextMenu.frameIndex)}>
+            Move Left
+          </div>
+          <div className="fm-context-item" onClick={() => handleMoveRight(contextMenu.frameIndex)}>
+            Move Right
+          </div>
+          <div className="fm-context-item" onClick={handleExportSelected}>
+            Export {selectedFrames.size > 1 ? `${selectedFrames.size} Frames` : 'Frame'}
           </div>
           <div className="fm-context-item danger" onClick={() => handleDelete(contextMenu.frameIndex)}>
             Delete

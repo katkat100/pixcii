@@ -91,6 +91,14 @@ export default function RightPanel() {
           />
           Show Grid
         </label>
+        <label className="rp-grid-row">
+          <input
+            type="checkbox"
+            checked={state.guidesVisible}
+            onChange={() => dispatch({ type: 'TOGGLE_GUIDES' })}
+          />
+          Show Guides
+        </label>
       </div>
 
       {/* Section 3: Characters */}
@@ -100,13 +108,15 @@ export default function RightPanel() {
           <input
             className="rp-char-input"
             type="text"
-            maxLength={1}
             value={typeChar}
             placeholder="#"
             onChange={e => {
               const val = e.target.value
               if (val.length > 0) {
-                selectChar(val[0])
+                // Use Array.from to properly handle multi-byte Unicode chars
+                const chars = Array.from(val)
+                const lastChar = chars[chars.length - 1]
+                selectChar(lastChar)
               } else {
                 setTypeChar('')
               }

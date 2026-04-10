@@ -84,7 +84,37 @@ export default function Canvas() {
       selection,
       brushSize: state.brushSize,
       activeTool: state.activeTool,
+      guidesVisible: state.guidesVisible,
     })
+
+    // Draw moving selection content overlay
+    if (isMovingSelectionRef.current && moveContentRef.current && selection) {
+      const scale = zoom / 100
+      const cellW = CELL_WIDTH * scale
+      const cellH = CELL_HEIGHT * scale
+      const minRow = Math.min(selection.startRow, selection.endRow)
+      const minCol = Math.min(selection.startCol, selection.endCol)
+      const movedData = moveContentRef.current.data
+
+      ctx.save()
+      ctx.fillStyle = '#e0e0e0'
+      ctx.font = `${cellH * 0.85}px monospace, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+
+      for (let r = 0; r < movedData.length; r++) {
+        for (let c = 0; c < movedData[r].length; c++) {
+          const ch = movedData[r][c]
+          if (ch === ' ') continue
+          const tr = minRow + r
+          const tc = minCol + c
+          if (tr < 0 || tr >= project.canvas.height || tc < 0 || tc >= project.canvas.width) continue
+          const { x, y } = cellToPixel(tc, tr, zoom, panX, panY)
+          ctx.fillText(ch, x + cellW / 2, y + cellH / 2)
+        }
+      }
+      ctx.restore()
+    }
 
     // Draw shape preview overlay
     const preview = shapePreviewRef.current
@@ -96,7 +126,7 @@ export default function Canvas() {
       ctx.save()
       ctx.globalAlpha = 0.5
       ctx.fillStyle = '#e94560'
-      ctx.font = `${cellH * 0.85}px monospace`
+      ctx.font = `${cellH * 0.85}px monospace, sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
 
@@ -114,7 +144,7 @@ export default function Canvas() {
     frame, onionFrame, zoom, panX, panY,
     gridVisible, cursorRow, cursorCol, selection,
     project.canvas.width, project.canvas.height,
-    activeTool, state.activeChar, state.brushSize,
+    activeTool, state.activeChar, state.brushSize, state.guidesVisible,
   ])
 
   // -------------------------------------------------------------------------
@@ -168,6 +198,10 @@ export default function Canvas() {
   // -------------------------------------------------------------------------
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Let browser handle input/textarea events natively (typing, pasting)
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
       // When text tool is active, text input takes priority over single-letter shortcuts
       if (state.activeTool === 'text') {
         // Escape always clears selection, even in text mode
@@ -483,7 +517,7 @@ export default function Canvas() {
           ctx.save()
           ctx.globalAlpha = 0.5
           ctx.fillStyle = '#e94560'
-          ctx.font = `${cellH * 0.85}px monospace`
+          ctx.font = `${cellH * 0.85}px monospace, sans-serif`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
 

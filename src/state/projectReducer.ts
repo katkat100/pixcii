@@ -24,6 +24,7 @@ export type ProjectAction =
   | { type: 'SET_SHAPE_FILLED'; filled: boolean }
   | { type: 'SET_BRUSH_SIZE'; size: 1 | 2 | 3 }
   | { type: 'TOGGLE_GRID' }
+  | { type: 'TOGGLE_GUIDES' }
   | { type: 'SET_ZOOM'; zoom: number }
   | { type: 'SET_PAN'; panX: number; panY: number }
   | { type: 'SET_SELECTION'; selection: Selection | null }
@@ -93,6 +94,7 @@ export function createInitialState(): ProjectState {
     shapeFilled: false,
     brushSize: 1,
     gridVisible: true,
+    guidesVisible: false,
     zoom: 100,
     panX: 0,
     panY: 0,
@@ -170,6 +172,9 @@ export function projectReducer(state: ProjectState, action: ProjectAction): Proj
 
     case 'TOGGLE_GRID':
       return { ...state, gridVisible: !state.gridVisible }
+
+    case 'TOGGLE_GUIDES':
+      return { ...state, guidesVisible: !state.guidesVisible }
 
     case 'SET_ZOOM':
       return { ...state, zoom: clamp(action.zoom, 50, 400) }

@@ -35,6 +35,7 @@ export interface ProjectState {
   shapeFilled: boolean
   brushSize: 1 | 2 | 3
   gridVisible: boolean
+  guidesVisible: boolean
   zoom: number
   panX: number
   panY: number

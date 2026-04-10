@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useProjectState, useProjectDispatch } from '../state/ProjectContext'
 import { serializeProject, deserializeProject } from '../file/projectFile'
+import { mirrorHorizontal, mirrorVertical, rotateCW, rotateCCW } from '../canvas/tools/select'
 import { saveProject, openProject, exportTextFile } from '../file/fileSystem'
 import { frameToText, allFramesToTexts } from '../file/exportTxt'
 import './MenuBar.css'
@@ -13,7 +14,7 @@ export default function MenuBar() {
   const [openMenu, setOpenMenu] = useState<MenuName>(null)
   const menuBarRef = useRef<HTMLDivElement>(null)
 
-  const { project, activeFrameIndex, gridVisible, onionSkinEnabled } = state
+  const { project, activeFrameIndex, gridVisible, guidesVisible, onionSkinEnabled } = state
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -88,8 +89,7 @@ export default function MenuBar() {
     const frame = project.frames[activeFrameIndex]
     if (!frame) return
     const sanitized = frame.name.replace(/[^a-zA-Z0-9_-]/g, '_')
-    const num = String(activeFrameIndex + 1).padStart(2, '0')
-    const filename = `${sanitized}-${num}.txt`
+    const filename = `${sanitized}.txt`
     const content = frameToText(frame)
     try {
       await exportTextFile(filename, content)
@@ -116,12 +116,17 @@ export default function MenuBar() {
 
   const handleUndo = () => { closeMenu(); dispatch({ type: 'UNDO' }) }
   const handleRedo = () => { closeMenu(); dispatch({ type: 'REDO' }) }
+  const handleMirrorH = () => { closeMenu(); mirrorHorizontal(state, dispatch) }
+  const handleMirrorV = () => { closeMenu(); mirrorVertical(state, dispatch) }
+  const handleRotateCW = () => { closeMenu(); rotateCW(state, dispatch) }
+  const handleRotateCCW = () => { closeMenu(); rotateCCW(state, dispatch) }
 
   // ---------------------------------------------------------------------------
   // View actions
   // ---------------------------------------------------------------------------
 
   const handleToggleGrid = () => { closeMenu(); dispatch({ type: 'TOGGLE_GRID' }) }
+  const handleToggleGuides = () => { closeMenu(); dispatch({ type: 'TOGGLE_GUIDES' }) }
   const handleToggleOnion = () => { closeMenu(); dispatch({ type: 'TOGGLE_ONION_SKIN' }) }
 
   // ---------------------------------------------------------------------------
@@ -192,6 +197,11 @@ export default function MenuBar() {
             <button className="dropdown-item" onClick={handleRedo}>
               Redo <span className="shortcut">Ctrl+Shift+Z</span>
             </button>
+            <div className="dropdown-separator" />
+            <button className="dropdown-item" onClick={handleMirrorH}>Mirror Horizontal</button>
+            <button className="dropdown-item" onClick={handleMirrorV}>Mirror Vertical</button>
+            <button className="dropdown-item" onClick={handleRotateCW}>Rotate 90° CW</button>
+            <button className="dropdown-item" onClick={handleRotateCCW}>Rotate 90° CCW</button>
           </div>
         )}
       </div>
@@ -208,6 +218,9 @@ export default function MenuBar() {
           <div className="dropdown">
             <button className="dropdown-item" onClick={handleToggleGrid}>
               {gridVisible ? 'Hide Grid' : 'Show Grid'} <span className="shortcut">G</span>
+            </button>
+            <button className="dropdown-item" onClick={handleToggleGuides}>
+              {guidesVisible ? 'Hide Guides' : 'Show Guides'}
             </button>
             <button className="dropdown-item" onClick={handleToggleOnion}>
               {onionSkinEnabled ? 'Disable Onion Skin' : 'Enable Onion Skin'}

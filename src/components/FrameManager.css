@@ -97,6 +97,7 @@
   align-items: center;
   gap: 3px;
   flex-shrink: 0;
+  position: relative;
   cursor: pointer;
 }
 
@@ -122,6 +123,11 @@
   border-color: var(--accent);
 }
 
+.fm-frame-item.selected .fm-thumb {
+  border-color: rgba(233, 69, 96, 0.6);
+  background: rgba(233, 69, 96, 0.08);
+}
+
 
 .fm-frame-name {
   font-size: 9px;
@@ -135,6 +141,25 @@
 
 .fm-frame-item.active .fm-frame-name {
   color: var(--accent);
+}
+
+.fm-frame-item.drop-left::before,
+.fm-frame-item.drop-right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+.fm-frame-item.drop-left::before {
+  left: -4px;
+}
+
+.fm-frame-item.drop-right::after {
+  right: -4px;
 }
 
 .fm-add-btn {

@@ -19,6 +19,7 @@ export interface RenderOptions {
   accentColor?: string
   brushSize?: number
   activeTool?: string
+  guidesVisible?: boolean
 }
 
 export function renderCanvas(opts: RenderOptions): void {
@@ -40,6 +41,7 @@ export function renderCanvas(opts: RenderOptions): void {
     accentColor = '#e94560',
     brushSize = 1,
     activeTool,
+    guidesVisible = false,
   } = opts
 
   const scale = zoom / 100
@@ -68,7 +70,7 @@ export function renderCanvas(opts: RenderOptions): void {
     ctx.save()
     ctx.globalAlpha = 0.2
     ctx.fillStyle = '#e94560'
-    ctx.font = `${cellH * 0.85}px monospace`
+    ctx.font = `${cellH * 0.85}px monospace, sans-serif`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
 
@@ -87,7 +89,7 @@ export function renderCanvas(opts: RenderOptions): void {
   // Characters (current frame)
   // -------------------------------------------------------------------------
   ctx.fillStyle = '#e0e0e0'
-  ctx.font = `${cellH * 0.85}px monospace`
+  ctx.font = `${cellH * 0.85}px monospace, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
@@ -121,6 +123,49 @@ export function renderCanvas(opts: RenderOptions): void {
       ctx.lineTo(gridAreaX + gridAreaW, y)
     }
     ctx.stroke()
+  }
+
+  // -------------------------------------------------------------------------
+  // Center crosshair + thirds guides
+  // -------------------------------------------------------------------------
+  if (guidesVisible) {
+    ctx.save()
+    ctx.lineWidth = 1
+
+    // Center crosshair (quarters) -- brighter
+    ctx.strokeStyle = 'rgba(233, 69, 96, 0.35)'
+    ctx.beginPath()
+    // Vertical center line
+    const centerX = Math.round(panX + (canvasWidth / 2) * cellW) + 0.5
+    ctx.moveTo(centerX, gridAreaY)
+    ctx.lineTo(centerX, gridAreaY + gridAreaH)
+    // Horizontal center line
+    const centerY = Math.round(panY + (canvasHeight / 2) * cellH) + 0.5
+    ctx.moveTo(gridAreaX, centerY)
+    ctx.lineTo(gridAreaX + gridAreaW, centerY)
+    ctx.stroke()
+
+    // Thirds guide lines -- subtler
+    ctx.strokeStyle = 'rgba(233, 69, 96, 0.18)'
+    ctx.setLineDash([4, 4])
+    ctx.beginPath()
+    // Vertical thirds
+    const thirdX1 = Math.round(panX + (canvasWidth / 3) * cellW) + 0.5
+    const thirdX2 = Math.round(panX + (2 * canvasWidth / 3) * cellW) + 0.5
+    ctx.moveTo(thirdX1, gridAreaY)
+    ctx.lineTo(thirdX1, gridAreaY + gridAreaH)
+    ctx.moveTo(thirdX2, gridAreaY)
+    ctx.lineTo(thirdX2, gridAreaY + gridAreaH)
+    // Horizontal thirds
+    const thirdY1 = Math.round(panY + (canvasHeight / 3) * cellH) + 0.5
+    const thirdY2 = Math.round(panY + (2 * canvasHeight / 3) * cellH) + 0.5
+    ctx.moveTo(gridAreaX, thirdY1)
+    ctx.lineTo(gridAreaX + gridAreaW, thirdY1)
+    ctx.moveTo(gridAreaX, thirdY2)
+    ctx.lineTo(gridAreaX + gridAreaW, thirdY2)
+    ctx.stroke()
+
+    ctx.restore()
   }
 
   // -------------------------------------------------------------------------
