@@ -1,18 +1,45 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import './FrameManager.css'
 import { useProjectState, useProjectDispatch } from '../state/ProjectContext'
 import { Frame } from '../types'
 
-// Render a tiny preview of a frame (first N rows/cols as plain text)
-function FrameThumb({ frame }: { frame: Frame }) {
-  const PREVIEW_ROWS = 10
-  const PREVIEW_COLS = 16
-  const lines = frame.data.slice(0, PREVIEW_ROWS).map(row =>
-    row.slice(0, PREVIEW_COLS).join('')
-  )
+const THUMB_W = 64
+const THUMB_H = 44
+
+// Render a tiny preview of a frame using a canvas element
+function FrameThumb({ frame, gridWidth, gridHeight }: { frame: Frame; gridWidth: number; gridHeight: number }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // Clear
+    ctx.fillStyle = '#1a1a2e'
+    ctx.fillRect(0, 0, THUMB_W, THUMB_H)
+
+    const cellW = THUMB_W / gridWidth
+    const cellH = THUMB_H / gridHeight
+
+    ctx.fillStyle = '#e0e0e0'
+    ctx.font = `${cellH * 0.85}px monospace`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+
+    for (let r = 0; r < gridHeight; r++) {
+      for (let c = 0; c < gridWidth; c++) {
+        const ch = frame.data[r]?.[c]
+        if (!ch || ch === ' ') continue
+        ctx.fillText(ch, c * cellW + cellW / 2, r * cellH + cellH / 2)
+      }
+    }
+  }, [frame, gridWidth, gridHeight])
+
   return (
     <div className="fm-thumb">
-      <pre className="fm-thumb-pre">{lines.join('\n')}</pre>
+      <canvas ref={canvasRef} width={THUMB_W} height={THUMB_H} style={{ display: 'block' }} />
     </div>
   )
 }
@@ -30,23 +57,8 @@ export default function FrameManager() {
   const { project, activeFrameIndex, isPlaying, onionSkinEnabled } = state
   const { fps, frames } = project
 
-  const [fpsInput, setFpsInput] = useState(String(fps))
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
-
-  // Keep fps input in sync with state
-  useEffect(() => {
-    setFpsInput(String(fps))
-  }, [fps])
-
-  const commitFps = () => {
-    const val = parseInt(fpsInput, 10)
-    if (!isNaN(val) && val >= 1) {
-      dispatch({ type: 'SET_FPS', fps: val })
-    } else {
-      setFpsInput(String(fps))
-    }
-  }
 
   const handleContextMenu = (e: React.MouseEvent, index: number) => {
     e.preventDefault()
@@ -65,6 +77,26 @@ export default function FrameManager() {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [contextMenu, closeContextMenu])
+
+  // Adjust context menu position to stay within viewport
+  useEffect(() => {
+    if (!contextMenu || !contextMenuRef.current) return
+    const el = contextMenuRef.current
+    const rect = el.getBoundingClientRect()
+    let { x, y } = contextMenu
+    if (rect.right > window.innerWidth) {
+      x = window.innerWidth - rect.width - 4
+    }
+    if (rect.bottom > window.innerHeight) {
+      y = window.innerHeight - rect.height - 4
+    }
+    if (x < 0) x = 4
+    if (y < 0) y = 4
+    if (x !== contextMenu.x || y !== contextMenu.y) {
+      el.style.left = `${x}px`
+      el.style.top = `${y}px`
+    }
+  }, [contextMenu])
 
   const handleDuplicate = (index: number) => {
     dispatch({ type: 'DUPLICATE_FRAME', index })
@@ -103,10 +135,13 @@ export default function FrameManager() {
             type="number"
             min={1}
             max={30}
-            value={fpsInput}
-            onChange={e => setFpsInput(e.target.value)}
-            onBlur={commitFps}
-            onKeyDown={e => { if (e.key === 'Enter') commitFps() }}
+            value={fps}
+            onChange={e => {
+              const val = parseInt(e.target.value, 10)
+              if (!isNaN(val)) {
+                dispatch({ type: 'SET_FPS', fps: val })
+              }
+            }}
           />
         </div>
 
@@ -136,7 +171,11 @@ export default function FrameManager() {
             onClick={() => dispatch({ type: 'SELECT_FRAME', index })}
             onContextMenu={e => handleContextMenu(e, index)}
           >
-            <FrameThumb frame={frame} />
+            <FrameThumb
+              frame={frame}
+              gridWidth={project.canvas.width}
+              gridHeight={project.canvas.height}
+            />
             <div className="fm-frame-name">{frame.name}</div>
           </div>
         ))}

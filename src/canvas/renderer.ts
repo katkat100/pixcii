@@ -17,6 +17,8 @@ export interface RenderOptions {
   cursorCol: number
   selection: Selection | null
   accentColor?: string
+  brushSize?: number
+  activeTool?: string
 }
 
 export function renderCanvas(opts: RenderOptions): void {
@@ -36,6 +38,8 @@ export function renderCanvas(opts: RenderOptions): void {
     cursorCol,
     selection,
     accentColor = '#e94560',
+    brushSize = 1,
+    activeTool,
   } = opts
 
   const scale = zoom / 100
@@ -122,10 +126,17 @@ export function renderCanvas(opts: RenderOptions): void {
   // -------------------------------------------------------------------------
   // Cursor highlight
   // -------------------------------------------------------------------------
-  const { x: curX, y: curY } = cellToPixel(cursorCol, cursorRow, zoom, panX, panY)
+  const cursorBrush = (activeTool === 'pencil' || activeTool === 'eraser') ? brushSize : 1
+  const half = Math.floor(cursorBrush / 2)
+  const { x: curX, y: curY } = cellToPixel(cursorCol - half, cursorRow - half, zoom, panX, panY)
   ctx.strokeStyle = accentColor
   ctx.lineWidth = 1.5
-  ctx.strokeRect(Math.round(curX) + 0.5, Math.round(curY) + 0.5, cellW - 1, cellH - 1)
+  ctx.strokeRect(
+    Math.round(curX) + 0.5,
+    Math.round(curY) + 0.5,
+    cellW * cursorBrush - 1,
+    cellH * cursorBrush - 1,
+  )
 
   // -------------------------------------------------------------------------
   // Selection (marching ants)

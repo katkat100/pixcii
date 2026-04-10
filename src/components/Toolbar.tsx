@@ -3,12 +3,12 @@ import { useProjectState, useProjectDispatch } from '../state/ProjectContext'
 import { Tool } from '../types'
 
 const TOOLS: { tool: Tool; label: string; title: string }[] = [
-  { tool: 'pencil',  label: '✎', title: 'Pencil' },
-  { tool: 'eraser',  label: '⌫', title: 'Eraser' },
-  { tool: 'select',  label: '▭', title: 'Select' },
-  { tool: 'fill',    label: '◧', title: 'Fill' },
-  { tool: 'text',    label: 'T', title: 'Text' },
-  { tool: 'shape',   label: '◇', title: 'Shape' },
+  { tool: 'pencil',  label: '✎', title: 'Pencil (P)' },
+  { tool: 'eraser',  label: '⌫', title: 'Eraser (E)' },
+  { tool: 'select',  label: '▭', title: 'Select (S)' },
+  { tool: 'fill',    label: '◧', title: 'Fill (F)' },
+  { tool: 'text',    label: 'T', title: 'Text (T)' },
+  { tool: 'shape',   label: '◇', title: 'Shape (H)' },
 ]
 
 export default function Toolbar() {

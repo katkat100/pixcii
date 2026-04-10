@@ -49,6 +49,15 @@ export interface ProjectState {
   cursorCol: number
 }
 
+export function isInSelection(row: number, col: number, selection: Selection | null): boolean {
+  if (!selection) return true  // no selection = everything is valid
+  const minR = Math.min(selection.startRow, selection.endRow)
+  const maxR = Math.max(selection.startRow, selection.endRow)
+  const minC = Math.min(selection.startCol, selection.endCol)
+  const maxC = Math.max(selection.startCol, selection.endCol)
+  return row >= minR && row <= maxR && col >= minC && col <= maxC
+}
+
 export function createEmptyFrame(width: number, height: number, name: string): Frame {
   const data: string[][] = []
   for (let r = 0; r < height; r++) {

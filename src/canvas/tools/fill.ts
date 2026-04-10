@@ -1,4 +1,4 @@
-import { ProjectState, HistoryEntry } from '../../types'
+import { ProjectState, HistoryEntry, isInSelection } from '../../types'
 import { ProjectAction } from '../../state/projectReducer'
 import { floodFill } from '../../utils/floodFill'
 
@@ -10,11 +10,13 @@ export function handleFillDown(
 ): void {
   const { width, height } = state.project.canvas
   const frame = state.project.frames[state.activeFrameIndex]
-  const { activeChar } = state
+  const { activeChar, selection } = state
 
   if (row < 0 || row >= height || col < 0 || col >= width) return
+  if (!isInSelection(row, col, selection)) return
 
-  const filledPoints = floodFill(frame.data, row, col, activeChar, height, width)
+  const allFilledPoints = floodFill(frame.data, row, col, activeChar, height, width)
+  const filledPoints = allFilledPoints.filter(({ row: r, col: c }) => isInSelection(r, c, selection))
   if (filledPoints.length === 0) return
 
   const cells = filledPoints.map(({ row: r, col: c }) => ({

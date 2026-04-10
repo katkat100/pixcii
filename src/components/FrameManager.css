@@ -108,8 +108,8 @@
   border-radius: 3px;
   overflow: hidden;
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: center;
   transition: border-color 0.1s;
   position: relative;
 }
@@ -122,16 +122,6 @@
   border-color: var(--accent);
 }
 
-.fm-thumb-pre {
-  font-family: monospace;
-  font-size: 4px;
-  line-height: 1.2;
-  color: var(--text);
-  white-space: pre;
-  padding: 2px;
-  pointer-events: none;
-  user-select: none;
-}
 
 .fm-frame-name {
   font-size: 9px;

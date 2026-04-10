@@ -19,17 +19,21 @@ const TOOL_NAMES: Record<string, string> = {
   shape:  'Shape',
 }
 
+const COMMON_CHARS = [
+  '█','▄','▀','▌','▐','░','▒','▓','■','□','▪','▫','▬','▲','▼','◄','►','◆','○','●','◘','◙',
+  '╔','╗','╚','╝','║','═','╠','╣','╦','╩','╬','┌','┐','└','┘','│','─','├','┤','┬','┴','┼',
+]
+
 export default function RightPanel() {
   const state = useProjectState()
   const dispatch = useProjectDispatch()
-  const [typeChar, setTypeChar] = useState('')
+  const [typeChar, setTypeChar] = useState(state.activeChar ?? '')
 
   const { activeTool, brushSize, activeShapeType, shapeFilled, gridVisible, charactersInDocument, activeChar } = state
 
-  const handleUseChar = () => {
-    if (typeChar.length > 0) {
-      dispatch({ type: 'SET_CHAR', char: typeChar[0] })
-    }
+  function selectChar(ch: string) {
+    setTypeChar(ch)
+    dispatch({ type: 'SET_CHAR', char: ch })
   }
 
   return (
@@ -74,7 +78,11 @@ export default function RightPanel() {
             </label>
           </div>
         )}
+      </div>
 
+      {/* Section 2: Display */}
+      <div className="rp-section">
+        <div className="rp-section-title">Display</div>
         <label className="rp-grid-row">
           <input
             type="checkbox"
@@ -85,9 +93,28 @@ export default function RightPanel() {
         </label>
       </div>
 
-      {/* Section 2: Characters in Document */}
+      {/* Section 3: Characters */}
       <div className="rp-section">
-        <div className="rp-section-title">Characters in Document</div>
+        <div className="rp-section-title">Characters</div>
+        <div className="rp-type-row">
+          <input
+            className="rp-char-input"
+            type="text"
+            maxLength={1}
+            value={typeChar}
+            placeholder="#"
+            onChange={e => {
+              const val = e.target.value
+              if (val.length > 0) {
+                selectChar(val[0])
+              } else {
+                setTypeChar('')
+              }
+            }}
+          />
+        </div>
+
+        <div className="rp-subsection-title">Characters in Document</div>
         {charactersInDocument.length === 0 ? (
           <div className="rp-empty-chars">No characters drawn yet</div>
         ) : (
@@ -97,31 +124,26 @@ export default function RightPanel() {
                 key={ch}
                 className={`rp-char-btn${activeChar === ch ? ' active' : ''}`}
                 title={`Use "${ch}"`}
-                onClick={() => dispatch({ type: 'SET_CHAR', char: ch })}
+                onClick={() => selectChar(ch)}
               >
                 {ch}
               </button>
             ))}
           </div>
         )}
-      </div>
 
-      {/* Section 3: Type Character */}
-      <div className="rp-section">
-        <div className="rp-section-title">Type Character</div>
-        <div className="rp-type-row">
-          <input
-            className="rp-char-input"
-            type="text"
-            maxLength={1}
-            value={typeChar}
-            placeholder="#"
-            onChange={e => setTypeChar(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleUseChar() }}
-          />
-          <button className="rp-use-btn" onClick={handleUseChar}>
-            Use
-          </button>
+        <div className="rp-subsection-title">Common Characters</div>
+        <div className="rp-char-grid">
+          {COMMON_CHARS.map(ch => (
+            <button
+              key={ch}
+              className={`rp-char-btn${activeChar === ch ? ' active' : ''}`}
+              title={`Use "${ch}"`}
+              onClick={() => selectChar(ch)}
+            >
+              {ch}
+            </button>
+          ))}
         </div>
       </div>
     </div>
