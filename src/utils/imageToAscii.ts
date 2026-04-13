@@ -8,6 +8,10 @@ import { CELL_WIDTH, CELL_HEIGHT } from '../canvas/gridUtils'
  * @param gridHeight - number of rows in the ASCII grid
  * @param ramp - character ramp from lightest to darkest (e.g., " ░▒▓█")
  * @returns Promise of a 2D array of characters [row][col]
+ *
+ * TODO: expand the default ramp character pool with the broader picker character library
+ *       (kana, geometric, punctuation) for richer brightness mapping. See spec
+ *       docs/superpowers/specs/2026-04-13-character-picker-expansion-design.md (Out of scope).
  */
 export function imageToAscii(
   dataUrl: string,
