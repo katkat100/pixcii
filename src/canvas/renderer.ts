@@ -94,7 +94,7 @@ export function renderCanvas(opts: RenderOptions): void {
     ctx.save()
     ctx.globalAlpha = 0.2
     ctx.fillStyle = '#e94560'
-    ctx.font = `${cellH * 0.85}px monospace, sans-serif`
+    ctx.font = `${cellH * 0.85}px "Noto Sans Mono CJK JP", monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
 
@@ -113,7 +113,7 @@ export function renderCanvas(opts: RenderOptions): void {
   // Characters (current frame)
   // -------------------------------------------------------------------------
   ctx.fillStyle = '#e0e0e0'
-  ctx.font = `${cellH * 0.85}px monospace, sans-serif`
+  ctx.font = `${cellH * 0.85}px "Noto Sans Mono CJK JP", monospace`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
