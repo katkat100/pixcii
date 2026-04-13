@@ -21,7 +21,6 @@ const TOOL_NAMES: Record<string, string> = {
   shape:  'Shape',
 }
 
-
 export default function RightPanel() {
   const state = useProjectState()
   const dispatch = useProjectDispatch()
