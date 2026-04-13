@@ -45,6 +45,13 @@ export type ProjectAction =
   | { type: 'LOAD_PROJECT'; project: Project }
   | { type: 'NEW_PROJECT'; width: number; height: number }
   | { type: 'UPDATE_CHARACTERS_IN_DOCUMENT' }
+  | { type: 'MARK_SAVED'; fileName?: string }
+  | { type: 'SET_FILE_NAME'; fileName: string }
+  | { type: 'SET_REFERENCE_IMAGE'; dataUrl: string | null }
+  | { type: 'TOGGLE_REFERENCE_IMAGE' }
+  | { type: 'SET_REFERENCE_OPACITY'; opacity: number }
+  | { type: 'SET_ASCII_RAMP'; ramp: string }
+  | { type: 'IMPORT_FRAME'; name: string; data: string[][] }
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -107,6 +114,13 @@ export function createInitialState(): ProjectState {
     charactersInDocument: [],
     cursorRow: 0,
     cursorCol: 0,
+    isDirty: false,
+    lastSaveTime: null,
+    fileName: null,
+    referenceImage: null,
+    referenceImageVisible: false,
+    referenceImageOpacity: 30,
+    asciiConvertRamp: ' ░▒▓█',
   }
 }
 
@@ -114,7 +128,20 @@ export function createInitialState(): ProjectState {
 // Reducer
 // ---------------------------------------------------------------------------
 
+const DIRTY_ACTIONS = new Set([
+  'SET_CELL', 'SET_CELLS', 'ADD_FRAME', 'DELETE_FRAME',
+  'DUPLICATE_FRAME', 'MOVE_FRAME', 'RENAME_FRAME', 'UNDO', 'REDO', 'IMPORT_FRAME',
+])
+
 export function projectReducer(state: ProjectState, action: ProjectAction): ProjectState {
+  const result = projectReducerInner(state, action)
+  if (result !== state && DIRTY_ACTIONS.has(action.type)) {
+    return { ...result, isDirty: true }
+  }
+  return result
+}
+
+function projectReducerInner(state: ProjectState, action: ProjectAction): ProjectState {
   switch (action.type) {
 
     case 'SET_CELL': {
@@ -455,6 +482,50 @@ export function projectReducer(state: ProjectState, action: ProjectAction): Proj
         ...state,
         charactersInDocument: scanCharacters(state.project.frames),
       }
+
+    case 'MARK_SAVED':
+      return {
+        ...state,
+        isDirty: false,
+        lastSaveTime: Date.now(),
+        fileName: action.fileName ?? state.fileName,
+      }
+
+    case 'SET_FILE_NAME':
+      return { ...state, fileName: action.fileName }
+
+    case 'SET_REFERENCE_IMAGE':
+      return {
+        ...state,
+        referenceImage: action.dataUrl,
+        referenceImageVisible: action.dataUrl !== null,
+      }
+
+    case 'TOGGLE_REFERENCE_IMAGE':
+      return { ...state, referenceImageVisible: !state.referenceImageVisible }
+
+    case 'SET_REFERENCE_OPACITY':
+      return { ...state, referenceImageOpacity: Math.max(0, Math.min(100, action.opacity)) }
+
+    case 'SET_ASCII_RAMP':
+      return { ...state, asciiConvertRamp: action.ramp }
+
+    case 'IMPORT_FRAME': {
+      const newFrame: Frame = { name: action.name, data: action.data }
+      const insertIndex = state.activeFrameIndex + 1
+      const newFrames = [
+        ...state.project.frames.slice(0, insertIndex),
+        newFrame,
+        ...state.project.frames.slice(insertIndex),
+      ]
+      return {
+        ...state,
+        project: { ...state.project, frames: newFrames },
+        activeFrameIndex: insertIndex,
+        undoStacks: [...state.undoStacks.slice(0, insertIndex), [], ...state.undoStacks.slice(insertIndex)],
+        redoStacks: [...state.redoStacks.slice(0, insertIndex), [], ...state.redoStacks.slice(insertIndex)],
+      }
+    }
 
     default:
       return state

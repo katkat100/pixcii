@@ -5,11 +5,19 @@ export function hasFileSystemAccess(): boolean {
   return typeof window !== 'undefined' && 'showOpenFilePicker' in window
 }
 
+export function getCurrentFileName(): string | null {
+  return currentFileHandle?.name?.replace(/\.pixcii$/, '') ?? null
+}
+
+export function clearFileHandle(): void {
+  currentFileHandle = null
+}
+
 // ---------------------------------------------------------------------------
 // Open
 // ---------------------------------------------------------------------------
 
-export async function openProject(): Promise<string | null> {
+export async function openProject(): Promise<{ json: string; fileName: string } | null> {
   if (hasFileSystemAccess()) {
     try {
       const [handle] = await (window as any).showOpenFilePicker({
@@ -23,7 +31,9 @@ export async function openProject(): Promise<string | null> {
       })
       currentFileHandle = handle
       const file = await handle.getFile()
-      return await file.text()
+      const json = await file.text()
+      const fileName = handle.name?.replace(/\.pixcii$/, '') ?? 'untitled'
+      return { json, fileName }
     } catch (err: any) {
       // User cancelled
       if (err?.name === 'AbortError') return null
@@ -42,8 +52,9 @@ export async function openProject(): Promise<string | null> {
         resolve(null)
         return
       }
-      const text = await file.text()
-      resolve(text)
+      const json = await file.text()
+      const fileName = file.name.replace(/\.pixcii$/, '')
+      resolve({ json, fileName })
     }
     input.oncancel = () => resolve(null)
     input.click()
@@ -51,10 +62,10 @@ export async function openProject(): Promise<string | null> {
 }
 
 // ---------------------------------------------------------------------------
-// Save
+// Save -- returns the filename used
 // ---------------------------------------------------------------------------
 
-export async function saveProject(json: string, saveAs = false): Promise<void> {
+export async function saveProject(json: string, saveAs = false): Promise<string | null> {
   if (hasFileSystemAccess()) {
     try {
       if (!currentFileHandle || saveAs) {
@@ -71,15 +82,16 @@ export async function saveProject(json: string, saveAs = false): Promise<void> {
       const writable = await currentFileHandle!.createWritable()
       await writable.write(json)
       await writable.close()
+      return currentFileHandle!.name?.replace(/\.pixcii$/, '') ?? null
     } catch (err: any) {
-      if (err?.name === 'AbortError') return
+      if (err?.name === 'AbortError') return null
       throw err
     }
-    return
   }
 
   // Fallback: trigger download
   downloadText('project.pixcii', json)
+  return 'project'
 }
 
 // ---------------------------------------------------------------------------

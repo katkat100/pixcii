@@ -56,6 +56,36 @@ body {
 
 .canvas-placeholder { color: var(--text-muted); font-size: 24px; }
 
+.recovery-banner {
+  background: #2a1a1e;
+  border-bottom: 1px solid var(--accent);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.recovery-btn {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.recovery-btn.accept {
+  background: var(--accent);
+  color: white;
+}
+
+.recovery-btn.discard {
+  background: var(--border);
+  color: var(--text-dim);
+}
+
 /* .right-panel styles moved to RightPanel.css */
 /* .frame-manager styles moved to FrameManager.css */
 

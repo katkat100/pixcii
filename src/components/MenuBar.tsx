@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { useProjectState, useProjectDispatch } from '../state/ProjectContext'
 import { serializeProject, deserializeProject } from '../file/projectFile'
 import { mirrorHorizontal, mirrorVertical, rotateCW, rotateCCW } from '../canvas/tools/select'
-import { saveProject, openProject, exportTextFile } from '../file/fileSystem'
+import { saveProject, openProject, exportTextFile, clearFileHandle } from '../file/fileSystem'
 import { frameToText, allFramesToTexts } from '../file/exportTxt'
+import { setLastManualSaveTime } from '../file/autosave'
 import './MenuBar.css'
 
 type MenuName = 'file' | 'edit' | 'view' | 'canvas' | null
@@ -14,7 +15,7 @@ export default function MenuBar() {
   const [openMenu, setOpenMenu] = useState<MenuName>(null)
   const menuBarRef = useRef<HTMLDivElement>(null)
 
-  const { project, activeFrameIndex, gridVisible, guidesVisible, onionSkinEnabled } = state
+  const { project, activeFrameIndex, gridVisible, guidesVisible, onionSkinEnabled, isDirty, fileName } = state
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -49,16 +50,18 @@ export default function MenuBar() {
       window.alert('Dimensions must be between 1 and 200.')
       return
     }
+    clearFileHandle()
     dispatch({ type: 'NEW_PROJECT', width, height })
   }
 
   const handleOpen = async () => {
     closeMenu()
     try {
-      const json = await openProject()
-      if (!json) return
-      const loaded = deserializeProject(json)
+      const result = await openProject()
+      if (!result) return
+      const loaded = deserializeProject(result.json)
       dispatch({ type: 'LOAD_PROJECT', project: loaded })
+      dispatch({ type: 'MARK_SAVED', fileName: result.fileName })
     } catch (err) {
       window.alert(`Failed to open project: ${(err as Error).message}`)
     }
@@ -68,7 +71,9 @@ export default function MenuBar() {
     closeMenu()
     try {
       const json = serializeProject(project)
-      await saveProject(json, false)
+      const savedName = await saveProject(json, false)
+      setLastManualSaveTime()
+      dispatch({ type: 'MARK_SAVED', fileName: savedName ?? undefined })
     } catch (err) {
       window.alert(`Failed to save project: ${(err as Error).message}`)
     }
@@ -78,7 +83,9 @@ export default function MenuBar() {
     closeMenu()
     try {
       const json = serializeProject(project)
-      await saveProject(json, true)
+      const savedName = await saveProject(json, true)
+      setLastManualSaveTime()
+      dispatch({ type: 'MARK_SAVED', fileName: savedName ?? undefined })
     } catch (err) {
       window.alert(`Failed to save project: ${(err as Error).message}`)
     }
@@ -108,6 +115,97 @@ export default function MenuBar() {
     } catch (err) {
       window.alert(`Export failed: ${(err as Error).message}`)
     }
+  }
+
+  const handleImportImage = () => {
+    closeMenu()
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/png,image/jpeg,image/gif,image/webp'
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = () => {
+        const dataUrl = reader.result as string
+        dispatch({ type: 'SET_REFERENCE_IMAGE', dataUrl })
+      }
+      reader.readAsDataURL(file)
+    }
+    input.click()
+  }
+
+  const handleClearReference = () => {
+    closeMenu()
+    dispatch({ type: 'SET_REFERENCE_IMAGE', dataUrl: null })
+  }
+
+  const importTxtFile = (callback: (text: string, fileName: string) => void) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.txt,text/plain'
+    input.multiple = true
+    input.onchange = async () => {
+      const files = input.files
+      if (!files) return
+      for (const file of Array.from(files)) {
+        const text = await file.text()
+        const name = file.name.replace(/\.txt$/, '')
+        callback(text, name)
+      }
+    }
+    input.click()
+  }
+
+  const txtToFrameData = (text: string, width: number, height: number): string[][] => {
+    const lines = text.split('\n')
+    const data: string[][] = []
+    for (let r = 0; r < height; r++) {
+      const row: string[] = []
+      const line = lines[r] ?? ''
+      const chars = Array.from(line)
+      for (let c = 0; c < width; c++) {
+        row.push(chars[c] ?? ' ')
+      }
+      data.push(row)
+    }
+    return data
+  }
+
+  const handleImportTxtAsProject = () => {
+    closeMenu()
+    importTxtFile((text, fileName) => {
+      const lines = text.split('\n')
+      const width = Math.max(...lines.map(l => Array.from(l).length), 1)
+      const height = Math.max(lines.length, 1)
+      clearFileHandle()
+      dispatch({ type: 'NEW_PROJECT', width, height })
+      dispatch({ type: 'RENAME_FRAME', index: 0, name: fileName })
+      const data = txtToFrameData(text, width, height)
+      const cells: { row: number; col: number; char: string }[] = []
+      for (let r = 0; r < height; r++) {
+        for (let c = 0; c < width; c++) {
+          if (data[r][c] !== ' ') {
+            cells.push({ row: r, col: c, char: data[r][c] })
+          }
+        }
+      }
+      if (cells.length > 0) {
+        dispatch({ type: 'SET_CELLS', cells })
+        dispatch({ type: 'UPDATE_CHARACTERS_IN_DOCUMENT' })
+      }
+      dispatch({ type: 'MARK_SAVED', fileName })
+    })
+  }
+
+  const handleImportTxtAsFrames = () => {
+    closeMenu()
+    importTxtFile((text, fileName) => {
+      const { width, height } = project.canvas
+      const data = txtToFrameData(text, width, height)
+      dispatch({ type: 'IMPORT_FRAME', name: fileName, data })
+      dispatch({ type: 'UPDATE_CHARACTERS_IN_DOCUMENT' })
+    })
   }
 
   // ---------------------------------------------------------------------------
@@ -151,7 +249,10 @@ export default function MenuBar() {
 
   return (
     <div className="menu-bar" ref={menuBarRef}>
-      <span className="app-title">Pixcii</span>
+      <span className="app-title">
+        Pixcii
+        <span className="app-filename"> - {fileName ?? 'untitled'}{isDirty ? ' ●' : ''}</span>
+      </span>
 
       {/* File Menu */}
       <div className="menu-group">
@@ -177,6 +278,13 @@ export default function MenuBar() {
             <div className="dropdown-separator" />
             <button className="dropdown-item" onClick={handleExportFrame}>Export Frame</button>
             <button className="dropdown-item" onClick={handleExportAll}>Export All Frames</button>
+            <div className="dropdown-separator" />
+            <button className="dropdown-item" onClick={handleImportTxtAsProject}>Import .txt as New Project</button>
+            <button className="dropdown-item" onClick={handleImportTxtAsFrames}>Import .txt as Frame(s)</button>
+            <button className="dropdown-item" onClick={handleImportImage}>Import Image as Reference</button>
+            {state.referenceImage && (
+              <button className="dropdown-item" onClick={handleClearReference}>Clear Reference Image</button>
+            )}
           </div>
         )}
       </div>

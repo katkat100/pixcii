@@ -20,6 +20,8 @@ export interface RenderOptions {
   brushSize?: number
   activeTool?: string
   guidesVisible?: boolean
+  referenceImage?: HTMLImageElement | null
+  referenceImageOpacity?: number
 }
 
 export function renderCanvas(opts: RenderOptions): void {
@@ -42,6 +44,8 @@ export function renderCanvas(opts: RenderOptions): void {
     brushSize = 1,
     activeTool,
     guidesVisible = false,
+    referenceImage,
+    referenceImageOpacity = 30,
   } = opts
 
   const scale = zoom / 100
@@ -62,6 +66,26 @@ export function renderCanvas(opts: RenderOptions): void {
 
   ctx.fillStyle = '#1a1a2e'
   ctx.fillRect(gridAreaX, gridAreaY, gridAreaW, gridAreaH)
+
+  // -------------------------------------------------------------------------
+  // Reference image
+  // -------------------------------------------------------------------------
+  if (referenceImage && referenceImageOpacity > 0) {
+    ctx.save()
+    ctx.globalAlpha = referenceImageOpacity / 100
+
+    // Scale to fit within grid area while maintaining aspect ratio, then center
+    const imgW = referenceImage.naturalWidth
+    const imgH = referenceImage.naturalHeight
+    const scaleFit = Math.min(gridAreaW / imgW, gridAreaH / imgH)
+    const drawW = imgW * scaleFit
+    const drawH = imgH * scaleFit
+    const drawX = gridAreaX + (gridAreaW - drawW) / 2
+    const drawY = gridAreaY + (gridAreaH - drawH) / 2
+
+    ctx.drawImage(referenceImage, drawX, drawY, drawW, drawH)
+    ctx.restore()
+  }
 
   // -------------------------------------------------------------------------
   // Onion skin (previous frame at 20% opacity)

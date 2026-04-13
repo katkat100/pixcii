@@ -48,6 +48,13 @@ export interface ProjectState {
   charactersInDocument: string[]
   cursorRow: number
   cursorCol: number
+  isDirty: boolean
+  lastSaveTime: number | null
+  fileName: string | null
+  referenceImage: string | null        // data URL of the reference image
+  referenceImageVisible: boolean
+  referenceImageOpacity: number        // 0-100
+  asciiConvertRamp: string             // character ramp for brightness mapping
 }
 
 export function isInSelection(row: number, col: number, selection: Selection | null): boolean {

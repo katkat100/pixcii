@@ -29,3 +29,47 @@
   font-family: monospace;
   font-size: 11px;
 }
+
+.status-saved {
+  color: var(--text-muted);
+}
+
+.status-unsaved {
+  color: var(--accent);
+}
+
+.status-spacer {
+  flex: 1;
+}
+
+.status-zoom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.zoom-btn {
+  width: 20px;
+  height: 18px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.zoom-label {
+  min-width: 36px;
+  text-align: center;
+  font-size: 11px;
+}

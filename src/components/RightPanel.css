@@ -101,6 +101,57 @@
 
 .rp-grid-row input { cursor: pointer; accent-color: var(--accent); }
 
+/* Slider row */
+.rp-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.rp-slider {
+  flex: 1;
+  height: 4px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.rp-slider-value {
+  min-width: 32px;
+  text-align: right;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Convert section */
+.rp-convert-section {
+  margin-top: 8px;
+}
+
+.rp-ramp-input {
+  width: 100% !important;
+  letter-spacing: 2px;
+}
+
+.rp-convert-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 5px 0;
+  background: var(--accent);
+  border: none;
+  border-radius: 3px;
+  color: white;
+  font-size: 11px;
+  cursor: pointer;
+  transition: opacity 0.1s;
+}
+
+.rp-convert-btn:hover {
+  opacity: 0.85;
+}
+
 /* Subsection title within a section */
 .rp-subsection-title {
   font-size: 10px;

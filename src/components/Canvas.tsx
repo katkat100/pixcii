@@ -15,6 +15,7 @@ import {
 } from '../canvas/tools/select'
 import { serializeProject, deserializeProject } from '../file/projectFile'
 import { saveProject, openProject } from '../file/fileSystem'
+import { setLastManualSaveTime } from '../file/autosave'
 import { isInSelection, Selection, HistoryEntry } from '../types'
 import './Canvas.css'
 
@@ -37,6 +38,11 @@ export default function Canvas() {
   const moveStartRef = useRef<{ row: number; col: number } | null>(null)
   const moveContentRef = useRef<{ data: string[][], selSnapshot: Selection } | null>(null)
 
+  // Pan state
+  const isPanningRef = useRef(false)
+  const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null)
+  const spaceHeldRef = useRef(false)
+
   const {
     project,
     activeFrameIndex,
@@ -57,6 +63,18 @@ export default function Canvas() {
   const onionFrame = onionSkinEnabled && activeFrameIndex > 0
     ? project.frames[activeFrameIndex - 1]
     : undefined
+
+  // Load reference image as HTMLImageElement
+  const refImageRef = useRef<HTMLImageElement | null>(null)
+  useEffect(() => {
+    if (!state.referenceImage) {
+      refImageRef.current = null
+      return
+    }
+    const img = new Image()
+    img.onload = () => { refImageRef.current = img }
+    img.src = state.referenceImage
+  }, [state.referenceImage])
 
   // -------------------------------------------------------------------------
   // Draw
@@ -85,6 +103,8 @@ export default function Canvas() {
       brushSize: state.brushSize,
       activeTool: state.activeTool,
       guidesVisible: state.guidesVisible,
+      referenceImage: state.referenceImageVisible ? refImageRef.current : null,
+      referenceImageOpacity: state.referenceImageOpacity,
     })
 
     // Draw moving selection content overlay
@@ -145,6 +165,7 @@ export default function Canvas() {
     gridVisible, cursorRow, cursorCol, selection,
     project.canvas.width, project.canvas.height,
     activeTool, state.activeChar, state.brushSize, state.guidesVisible,
+    state.referenceImage, state.referenceImageVisible, state.referenceImageOpacity,
   ])
 
   // -------------------------------------------------------------------------
@@ -237,23 +258,30 @@ export default function Canvas() {
 
       if (ctrl && e.shiftKey && (e.key === 'S' || e.key === 's')) {
         e.preventDefault()
-        saveProject(serializeProject(state.project), true).catch(() => {})
+        saveProject(serializeProject(state.project), true).then((savedName) => {
+          setLastManualSaveTime()
+          dispatch({ type: 'MARK_SAVED', fileName: savedName ?? undefined })
+        }).catch(() => {})
         return
       }
 
       if (ctrl && e.key === 's') {
         e.preventDefault()
-        saveProject(serializeProject(state.project), false).catch(() => {})
+        saveProject(serializeProject(state.project), false).then((savedName) => {
+          setLastManualSaveTime()
+          dispatch({ type: 'MARK_SAVED', fileName: savedName ?? undefined })
+        }).catch(() => {})
         return
       }
 
       if (ctrl && e.key === 'o') {
         e.preventDefault()
-        openProject().then((json) => {
-          if (!json) return
+        openProject().then((result) => {
+          if (!result) return
           try {
-            const loaded = deserializeProject(json)
+            const loaded = deserializeProject(result.json)
             dispatch({ type: 'LOAD_PROJECT', project: loaded })
+            dispatch({ type: 'MARK_SAVED', fileName: result.fileName })
           } catch (err) {
             window.alert(`Failed to open project: ${(err as Error).message}`)
           }
@@ -362,6 +390,14 @@ export default function Canvas() {
   // Mouse events
   // -------------------------------------------------------------------------
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Middle-click or right-click: start panning
+    if (e.button === 1 || e.button === 2) {
+      e.preventDefault()
+      isPanningRef.current = true
+      panStartRef.current = { x: e.clientX, y: e.clientY, panX, panY }
+      return
+    }
+
     if (e.button !== 0) return
     isDrawingRef.current = true
     const cell = getCell(e)
@@ -433,6 +469,14 @@ export default function Canvas() {
   }, [getCell, dispatch, activeTool, state])
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Handle panning
+    if (isPanningRef.current && panStartRef.current) {
+      const dx = e.clientX - panStartRef.current.x
+      const dy = e.clientY - panStartRef.current.y
+      dispatch({ type: 'SET_PAN', panX: panStartRef.current.panX + dx, panY: panStartRef.current.panY + dy })
+      return
+    }
+
     const cell = getCell(e)
     if (!cell) return
     dispatch({ type: 'SET_CURSOR', row: cell.row, col: cell.col })
@@ -574,6 +618,13 @@ export default function Canvas() {
   ])
 
   const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Stop panning
+    if (isPanningRef.current) {
+      isPanningRef.current = false
+      panStartRef.current = null
+      return
+    }
+
     if (!isDrawingRef.current) return
     isDrawingRef.current = false
 
@@ -678,6 +729,9 @@ export default function Canvas() {
   }, [getCell, activeTool, activeShapeType, shapeFilled, state, dispatch, frame, project.canvas])
 
   const handleMouseLeave = useCallback(() => {
+    isPanningRef.current = false
+    panStartRef.current = null
+
     if (isDrawingRef.current) {
       isDrawingRef.current = false
       // Commit stroke undo for pencil/eraser if dragged off canvas
@@ -695,15 +749,39 @@ export default function Canvas() {
   }, [activeTool, dispatch])
 
   // -------------------------------------------------------------------------
-  // Wheel: Ctrl+scroll to zoom
+  // Wheel: scroll to zoom (native listener for passive: false)
   // -------------------------------------------------------------------------
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLCanvasElement>) => {
-    if (!e.ctrlKey) return
-    e.preventDefault()
-    const delta = e.deltaY < 0 ? 10 : -10
-    const newZoom = Math.min(400, Math.max(50, zoom + delta))
-    dispatch({ type: 'SET_ZOOM', zoom: newZoom })
-  }, [zoom, dispatch])
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const delta = e.deltaY < 0 ? 10 : -10
+      const newZoom = Math.min(400, Math.max(50, zoom + delta))
+      if (newZoom === zoom) return
+
+      // Zoom toward cursor position
+      const rect = canvas.getBoundingClientRect()
+      const mouseX = e.clientX - rect.left
+      const mouseY = e.clientY - rect.top
+
+      const oldScale = zoom / 100
+      const newScale = newZoom / 100
+
+      // Point under cursor in grid space
+      const gridX = (mouseX - panX) / oldScale
+      const gridY = (mouseY - panY) / oldScale
+
+      // Adjust pan so the same grid point stays under the cursor
+      const newPanX = mouseX - gridX * newScale
+      const newPanY = mouseY - gridY * newScale
+
+      dispatch({ type: 'SET_ZOOM', zoom: newZoom })
+      dispatch({ type: 'SET_PAN', panX: newPanX, panY: newPanY })
+    }
+    canvas.addEventListener('wheel', onWheel, { passive: false })
+    return () => canvas.removeEventListener('wheel', onWheel)
+  }, [zoom, panX, panY, dispatch])
 
   return (
     <div ref={containerRef} className="canvas-container">
@@ -714,7 +792,8 @@ export default function Canvas() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
-        onWheel={handleWheel}
+        onAuxClick={e => e.preventDefault()}
+        onContextMenu={e => e.preventDefault()}
       />
     </div>
   )

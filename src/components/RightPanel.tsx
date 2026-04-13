@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import './RightPanel.css'
 import { useProjectState, useProjectDispatch } from '../state/ProjectContext'
-import { ShapeType } from '../types'
+import { ShapeType, HistoryEntry } from '../types'
+import { imageToAscii } from '../utils/imageToAscii'
 
 const SHAPE_TYPES: { value: ShapeType; label: string }[] = [
   { value: 'line',      label: 'Line' },
@@ -99,6 +100,73 @@ export default function RightPanel() {
           />
           Show Guides
         </label>
+
+        {state.referenceImage && (
+          <>
+            <label className="rp-grid-row">
+              <input
+                type="checkbox"
+                checked={state.referenceImageVisible}
+                onChange={() => dispatch({ type: 'TOGGLE_REFERENCE_IMAGE' })}
+              />
+              Show Reference
+            </label>
+            <div className="rp-slider-row">
+              <span className="option-label">Opacity</span>
+              <input
+                type="range"
+                className="rp-slider"
+                min={0}
+                max={100}
+                value={state.referenceImageOpacity}
+                onChange={e => dispatch({ type: 'SET_REFERENCE_OPACITY', opacity: parseInt(e.target.value) })}
+              />
+              <span className="rp-slider-value">{state.referenceImageOpacity}%</span>
+            </div>
+            <div className="rp-convert-section">
+              <div className="rp-subsection-title">Convert to ASCII</div>
+              <div className="rp-type-row">
+                <input
+                  className="rp-char-input rp-ramp-input"
+                  type="text"
+                  value={state.asciiConvertRamp}
+                  title="Character ramp: lightest to darkest"
+                  onChange={e => dispatch({ type: 'SET_ASCII_RAMP', ramp: e.target.value })}
+                />
+              </div>
+              <button
+                className="rp-convert-btn"
+                onClick={async () => {
+                  if (!state.referenceImage) return
+                  try {
+                    const ascii = await imageToAscii(
+                      state.referenceImage,
+                      state.project.canvas.width,
+                      state.project.canvas.height,
+                      state.asciiConvertRamp,
+                    )
+                    const frame = state.project.frames[state.activeFrameIndex]
+                    const cells: HistoryEntry['cells'] = []
+                    for (let r = 0; r < ascii.length; r++) {
+                      for (let c = 0; c < ascii[r].length; c++) {
+                        if (r < state.project.canvas.height && c < state.project.canvas.width) {
+                          cells.push({ row: r, col: c, prev: frame.data[r][c], next: ascii[r][c] })
+                        }
+                      }
+                    }
+                    dispatch({ type: 'PUSH_UNDO', entry: { cells } })
+                    dispatch({ type: 'SET_CELLS', cells: cells.map(c => ({ row: c.row, col: c.col, char: c.next })) })
+                    dispatch({ type: 'UPDATE_CHARACTERS_IN_DOCUMENT' })
+                  } catch (err) {
+                    window.alert(`Conversion failed: ${(err as Error).message}`)
+                  }
+                }}
+              >
+                Convert to ASCII
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Section 3: Characters */}
