@@ -3,6 +3,7 @@ import './RightPanel.css'
 import { useProjectState, useProjectDispatch } from '../state/ProjectContext'
 import { ShapeType, HistoryEntry } from '../types'
 import { imageToAscii } from '../utils/imageToAscii'
+import { CHARACTER_GROUPS } from './characterSets'
 
 const SHAPE_TYPES: { value: ShapeType; label: string }[] = [
   { value: 'line',      label: 'Line' },
@@ -20,10 +21,6 @@ const TOOL_NAMES: Record<string, string> = {
   shape:  'Shape',
 }
 
-const COMMON_CHARS = [
-  '█','▄','▀','▌','▐','░','▒','▓','■','□','▪','▫','▬','▲','▼','◄','►','◆','○','●','◘','◙',
-  '╔','╗','╚','╝','║','═','╠','╣','╦','╩','╬','┌','┐','└','┘','│','─','├','┤','┬','┴','┼',
-]
 
 export default function RightPanel() {
   const state = useProjectState()
@@ -127,7 +124,7 @@ export default function RightPanel() {
               <div className="rp-subsection-title">Convert to ASCII</div>
               <div className="rp-type-row">
                 <input
-                  className="rp-char-input rp-ramp-input"
+                  className="rp-char-input rp-ramp-input mono-cjk"
                   type="text"
                   value={state.asciiConvertRamp}
                   title="Character ramp: lightest to darkest"
@@ -174,7 +171,7 @@ export default function RightPanel() {
         <div className="rp-section-title">Characters</div>
         <div className="rp-type-row">
           <input
-            className="rp-char-input"
+            className="rp-char-input mono-cjk"
             type="text"
             value={typeChar}
             placeholder="#"
@@ -200,7 +197,7 @@ export default function RightPanel() {
             {charactersInDocument.map(ch => (
               <button
                 key={ch}
-                className={`rp-char-btn${activeChar === ch ? ' active' : ''}`}
+                className={`rp-char-btn mono-cjk${activeChar === ch ? ' active' : ''}`}
                 title={`Use "${ch}"`}
                 onClick={() => selectChar(ch)}
               >
@@ -210,19 +207,23 @@ export default function RightPanel() {
           </div>
         )}
 
-        <div className="rp-subsection-title">Common Characters</div>
-        <div className="rp-char-grid">
-          {COMMON_CHARS.map(ch => (
-            <button
-              key={ch}
-              className={`rp-char-btn${activeChar === ch ? ' active' : ''}`}
-              title={`Use "${ch}"`}
-              onClick={() => selectChar(ch)}
-            >
-              {ch}
-            </button>
-          ))}
-        </div>
+        {CHARACTER_GROUPS.map(group => (
+          <div key={group.title}>
+            <div className="rp-subsection-title">{group.title}</div>
+            <div className="rp-char-grid">
+              {group.chars.map(ch => (
+                <button
+                  key={ch}
+                  className={`rp-char-btn mono-cjk${activeChar === ch ? ' active' : ''}`}
+                  title={`Use "${ch}"`}
+                  onClick={() => selectChar(ch)}
+                >
+                  {ch}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
