@@ -1,3 +1,15 @@
+@font-face {
+  font-family: 'Noto Sans Mono CJK JP';
+  src: url('/fonts/NotoSansMonoCJKjp-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.mono-cjk {
+  font-family: 'Noto Sans Mono CJK JP', monospace;
+}
+
 :root {
   --bg: #1a1a2e;
   --panel: #16213e;
