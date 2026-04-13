@@ -26,7 +26,7 @@ function FrameThumb({ frame, gridWidth, gridHeight }: { frame: Frame; gridWidth:
     const cellH = THUMB_H / gridHeight
 
     ctx.fillStyle = '#e0e0e0'
-    ctx.font = `${cellH * 0.85}px monospace`
+    ctx.font = `${cellH * 0.85}px "Noto Sans Mono CJK JP", monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
 

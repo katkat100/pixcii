@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import './RightPanel.css'
 import { useProjectState, useProjectDispatch } from '../state/ProjectContext'
 import { ShapeType, HistoryEntry } from '../types'
@@ -32,6 +32,17 @@ export default function RightPanel() {
     setTypeChar(ch)
     dispatch({ type: 'SET_CHAR', char: ch })
   }
+
+  const charButton = (ch: string) => (
+    <button
+      key={ch}
+      className={`rp-char-btn mono-cjk${activeChar === ch ? ' active' : ''}`}
+      title={`Use "${ch}"`}
+      onClick={() => selectChar(ch)}
+    >
+      {ch}
+    </button>
+  )
 
   return (
     <div className="right-panel">
@@ -193,35 +204,17 @@ export default function RightPanel() {
           <div className="rp-empty-chars">No characters drawn yet</div>
         ) : (
           <div className="rp-char-grid">
-            {charactersInDocument.map(ch => (
-              <button
-                key={ch}
-                className={`rp-char-btn mono-cjk${activeChar === ch ? ' active' : ''}`}
-                title={`Use "${ch}"`}
-                onClick={() => selectChar(ch)}
-              >
-                {ch}
-              </button>
-            ))}
+            {charactersInDocument.map(charButton)}
           </div>
         )}
 
         {CHARACTER_GROUPS.map(group => (
-          <div key={group.title}>
+          <Fragment key={group.title}>
             <div className="rp-subsection-title">{group.title}</div>
             <div className="rp-char-grid">
-              {group.chars.map(ch => (
-                <button
-                  key={ch}
-                  className={`rp-char-btn mono-cjk${activeChar === ch ? ' active' : ''}`}
-                  title={`Use "${ch}"`}
-                  onClick={() => selectChar(ch)}
-                >
-                  {ch}
-                </button>
-              ))}
+              {group.chars.map(charButton)}
             </div>
-          </div>
+          </Fragment>
         ))}
       </div>
     </div>

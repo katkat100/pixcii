@@ -118,7 +118,7 @@ export default function Canvas() {
 
       ctx.save()
       ctx.fillStyle = '#e0e0e0'
-      ctx.font = `${cellH * 0.85}px monospace, sans-serif`
+      ctx.font = `${cellH * 0.85}px "Noto Sans Mono CJK JP", monospace`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
 
@@ -146,7 +146,7 @@ export default function Canvas() {
       ctx.save()
       ctx.globalAlpha = 0.5
       ctx.fillStyle = '#e94560'
-      ctx.font = `${cellH * 0.85}px monospace, sans-serif`
+      ctx.font = `${cellH * 0.85}px "Noto Sans Mono CJK JP", monospace`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
 
@@ -561,7 +561,7 @@ export default function Canvas() {
           ctx.save()
           ctx.globalAlpha = 0.5
           ctx.fillStyle = '#e94560'
-          ctx.font = `${cellH * 0.85}px monospace, sans-serif`
+          ctx.font = `${cellH * 0.85}px "Noto Sans Mono CJK JP", monospace`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
 
