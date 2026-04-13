@@ -120,6 +120,8 @@ export function createInitialState(): ProjectState {
     referenceImage: null,
     referenceImageVisible: false,
     referenceImageOpacity: 30,
+    // TODO: expand default ramp using the broader picker character library
+    //       (see docs/superpowers/specs/2026-04-13-character-picker-expansion-design.md).
     asciiConvertRamp: ' ░▒▓█',
   }
 }
