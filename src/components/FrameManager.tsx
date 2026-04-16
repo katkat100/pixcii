@@ -62,6 +62,9 @@ export default function FrameManager() {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
   const [selectedFrames, setSelectedFrames] = useState<Set<number>>(new Set())
+  const [renamingIndex, setRenamingIndex] = useState<number | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const renameInputRef = useRef<HTMLInputElement>(null)
 
   const handleFrameClick = (e: React.MouseEvent, index: number) => {
     if (e.shiftKey) {
@@ -151,12 +154,31 @@ export default function FrameManager() {
 
   const handleRename = (index: number) => {
     const current = frames[index]?.name ?? ''
-    const name = prompt('Rename frame:', current)
-    if (name !== null && name.trim().length > 0) {
-      dispatch({ type: 'RENAME_FRAME', index, name: name.trim() })
-    }
+    setRenamingIndex(index)
+    setRenameValue(current)
     closeContextMenu()
   }
+
+  const commitRename = () => {
+    if (renamingIndex !== null && renameValue.trim().length > 0) {
+      dispatch({ type: 'RENAME_FRAME', index: renamingIndex, name: renameValue.trim() })
+    }
+    setRenamingIndex(null)
+    setRenameValue('')
+  }
+
+  const cancelRename = () => {
+    setRenamingIndex(null)
+    setRenameValue('')
+  }
+
+  // Focus the rename input when it appears
+  useEffect(() => {
+    if (renamingIndex !== null && renameInputRef.current) {
+      renameInputRef.current.focus()
+      renameInputRef.current.select()
+    }
+  }, [renamingIndex])
 
   const handleMoveLeft = (index: number) => {
     if (index > 0) dispatch({ type: 'MOVE_FRAME', from: index, to: index - 1 })
@@ -277,7 +299,26 @@ export default function FrameManager() {
               gridWidth={project.canvas.width}
               gridHeight={project.canvas.height}
             />
-            <div className="fm-frame-name">{frame.name}</div>
+            {renamingIndex === index ? (
+              <input
+                ref={renameInputRef}
+                className="fm-rename-input"
+                type="text"
+                value={renameValue}
+                onChange={e => setRenameValue(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    commitRename()
+                  } else if (e.key === 'Escape') {
+                    cancelRename()
+                  }
+                }}
+                onClick={e => e.stopPropagation()}
+              />
+            ) : (
+              <div className="fm-frame-name">{frame.name}</div>
+            )}
           </div>
         ))}
 

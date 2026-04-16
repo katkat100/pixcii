@@ -143,6 +143,19 @@
   color: var(--accent);
 }
 
+.fm-rename-input {
+  width: 64px;
+  height: 16px;
+  font-size: 9px;
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  color: var(--text);
+  padding: 0 2px;
+  outline: none;
+}
+
 .fm-frame-item.drop-left::before,
 .fm-frame-item.drop-right::after {
   content: '';

@@ -244,7 +244,7 @@ export default function Canvas() {
 
       const ctrl = e.ctrlKey || e.metaKey
 
-      if (ctrl && e.shiftKey && e.key === 'Z') {
+      if (ctrl && e.shiftKey && (e.key === 'Z' || e.key === 'z')) {
         e.preventDefault()
         dispatch({ type: 'REDO' })
         return
