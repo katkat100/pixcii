@@ -5,6 +5,7 @@ import { mirrorHorizontal, mirrorVertical, rotateCW, rotateCCW } from '../canvas
 import { saveProject, openProject, exportTextFile, clearFileHandle } from '../file/fileSystem'
 import { frameToText, allFramesToTexts } from '../file/exportTxt'
 import { setLastManualSaveTime } from '../file/autosave'
+import Modal from './Modal'
 import './MenuBar.css'
 
 type MenuName = 'file' | 'edit' | 'view' | 'canvas' | null
@@ -14,6 +15,11 @@ export default function MenuBar() {
   const dispatch = useProjectDispatch()
   const [openMenu, setOpenMenu] = useState<MenuName>(null)
   const menuBarRef = useRef<HTMLDivElement>(null)
+  const [showNewModal, setShowNewModal] = useState(false)
+  const [newWidth, setNewWidth] = useState('40')
+  const [newHeight, setNewHeight] = useState('20')
+  const [newError, setNewError] = useState('')
+  const newWidthRef = useRef<HTMLInputElement>(null)
 
   const { project, activeFrameIndex, gridVisible, guidesVisible, onionSkinEnabled, isDirty, fileName } = state
 
@@ -40,18 +46,33 @@ export default function MenuBar() {
 
   const handleNew = () => {
     closeMenu()
-    const input = window.prompt('New canvas dimensions (WxH):', '40x20')
-    if (!input) return
-    const match = input.match(/^(\d+)[x×](\d+)$/i)
-    if (!match) { window.alert('Invalid format. Use WxH, e.g. 40x20'); return }
-    const width = parseInt(match[1], 10)
-    const height = parseInt(match[2], 10)
+    setNewWidth('40')
+    setNewHeight('20')
+    setNewError('')
+    setShowNewModal(true)
+  }
+
+  useEffect(() => {
+    if (showNewModal && newWidthRef.current) {
+      newWidthRef.current.focus()
+      newWidthRef.current.select()
+    }
+  }, [showNewModal])
+
+  const handleNewSubmit = () => {
+    const width = parseInt(newWidth, 10)
+    const height = parseInt(newHeight, 10)
+    if (isNaN(width) || isNaN(height)) {
+      setNewError('Please enter valid numbers.')
+      return
+    }
     if (width < 1 || height < 1 || width > 200 || height > 200) {
-      window.alert('Dimensions must be between 1 and 200.')
+      setNewError('Dimensions must be between 1 and 200.')
       return
     }
     clearFileHandle()
     dispatch({ type: 'NEW_PROJECT', width, height })
+    setShowNewModal(false)
   }
 
   const handleOpen = async () => {
@@ -359,6 +380,51 @@ export default function MenuBar() {
       <span className="menu-dimensions">
         {project.canvas.width} × {project.canvas.height}
       </span>
+
+      {/* New Project Modal */}
+      {showNewModal && (
+        <Modal title="New Project" onClose={() => setShowNewModal(false)}>
+          <form
+            className="modal-form"
+            onSubmit={e => { e.preventDefault(); handleNewSubmit() }}
+          >
+            <div className="modal-row">
+              <div className="modal-field">
+                <label className="modal-label">Width</label>
+                <input
+                  ref={newWidthRef}
+                  className="modal-input"
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={newWidth}
+                  onChange={e => setNewWidth(e.target.value)}
+                />
+              </div>
+              <div className="modal-field">
+                <label className="modal-label">Height</label>
+                <input
+                  className="modal-input"
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={newHeight}
+                  onChange={e => setNewHeight(e.target.value)}
+                />
+              </div>
+            </div>
+            {newError && <div className="modal-error">{newError}</div>}
+            <div className="modal-actions">
+              <button type="button" className="modal-btn" onClick={() => setShowNewModal(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="modal-btn modal-btn-primary">
+                Create
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   )
 }
